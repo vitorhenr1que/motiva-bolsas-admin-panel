@@ -12,7 +12,7 @@ export async function postAdmin<T>(path: string, body: any): Promise<T> {
 
     const res = await fetch(url, {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
         "Accept": "application/json"
       },
@@ -30,21 +30,25 @@ export async function postAdmin<T>(path: string, body: any): Promise<T> {
     return res.json();
   } catch (error: any) {
     console.error(`Falha na requisição [${path}]:`, error);
-    
+
     // Tratamento específico para o erro "Failed to fetch" (CORS ou rede)
     if (error.message === 'Failed to fetch') {
       throw new Error("Erro de conexão: Verifique se o endpoint está correto ou se há bloqueio de CORS.");
     }
-    
+
     throw error;
   }
 }
 
 export const adminApi = {
   // Alterado de /summary para /users/summary para seguir o padrão da API
-  getSummary: (filters: { search?: string; uf?: string; city?: string }) => 
-    postAdmin<SummaryResponse>('/users/summary', filters),
-  
+  getSummary: (filters: {
+    search?: string;
+    uf?: string;
+    city?: string;
+    course?: string;
+  }) => postAdmin<SummaryResponse>('/users/summary', filters),
+
   getUsers: (path: string, filters: {
     page: number;
     search?: string;
@@ -56,9 +60,9 @@ export const adminApi = {
     onlyPaid?: boolean;
   }) => postAdmin<UsersResponse>(path, filters),
 
-  getCoursesNovos: (filters: { uf?: string; city?: string }) => 
+  getCoursesNovos: (filters: { uf?: string; city?: string }) =>
     postAdmin<CoursesResponse>('/courses/novos', filters),
-    
-  getCoursesRenovados: (filters: { uf?: string; city?: string }) => 
+
+  getCoursesRenovados: (filters: { uf?: string; city?: string }) =>
     postAdmin<CoursesResponse>('/courses/renovados', filters),
 };

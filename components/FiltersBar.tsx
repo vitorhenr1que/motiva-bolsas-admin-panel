@@ -17,14 +17,16 @@ interface FiltersBarProps {
   onReset: () => void;
   onExport: () => void;
   showDates?: boolean;
+  courses?: string[];
 }
 
-export const FiltersBar: React.FC<FiltersBarProps> = ({ 
-  filters, 
-  onFilterChange, 
-  onReset, 
-  onExport, 
-  showDates = true 
+export const FiltersBar: React.FC<FiltersBarProps> = ({
+  filters,
+  onFilterChange,
+  onReset,
+  onExport,
+  showDates = true,
+  courses
 }) => {
   return (
     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-col gap-4">
@@ -44,13 +46,30 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
         {/* Course */}
         <div className="relative">
           <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input
-            type="text"
-            placeholder="Curso"
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
-            value={filters.course}
-            onChange={(e) => onFilterChange({ course: e.target.value })}
-          />
+          {courses && courses.length > 0 ? (
+            <select
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+              value={filters.course}
+              onChange={(e) => {
+                onFilterChange({ course: e.target.value });
+              }}
+            >
+              <option value="">Todos os Cursos</option>
+              {courses.map((course) => (
+                <option key={course} value={course}>
+                  {course}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              placeholder="Curso"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+              value={filters.course}
+              onChange={(e) => onFilterChange({ course: e.target.value })}
+            />
+          )}
         </div>
 
         {/* UF */}

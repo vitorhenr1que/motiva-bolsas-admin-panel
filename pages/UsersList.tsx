@@ -27,14 +27,15 @@ export const UsersList: React.FC<UsersListProps> = ({ type, title }) => {
   const [data, setData] = useState<UsersResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [availableCourses, setAvailableCourses] = useState<string[]>([]);
 
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const endpoint = type === UserListType.GENERAL ? '/users/general' : `/users/${type}`;
-      
+
       const response = await adminApi.getUsers(endpoint, {
         ...filters,
         page,
@@ -48,12 +49,16 @@ export const UsersList: React.FC<UsersListProps> = ({ type, title }) => {
           pages: 1
         });
       } else if (response && response.users) {
-        setData(response);
+        setData({
+          users: response.users,
+          total: response.total || (response as any).totalItems || response.users.length,
+          pages: response.pages || (response as any).totalPages || 1
+        });
       } else if (response && (response as any).data && Array.isArray((response as any).data)) {
         setData({
           users: (response as any).data,
-          total: (response as any).total || (response as any).data.length,
-          pages: (response as any).pages || 1
+          total: (response as any).total || (response as any).totalItems || (response as any).data.length,
+          pages: (response as any).pages || (response as any).totalPages || 1
         });
       } else {
         setData({ users: [], total: 0, pages: 0 });
@@ -66,6 +71,34 @@ export const UsersList: React.FC<UsersListProps> = ({ type, title }) => {
       setLoading(false);
     }
   }, [type, filters, page]);
+
+  // Fetch available courses for the filter
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        let response;
+        const courseFilters = { uf: filters.uf, city: filters.city };
+
+        if (type === UserListType.RENOVADOS || type === UserListType.RENOVADOS_PENDENTES) {
+          response = await adminApi.getCoursesRenovados(courseFilters);
+        } else {
+          // Default to Novos for general or other types
+          response = await adminApi.getCoursesNovos(courseFilters);
+        }
+
+        if (response && response.courses) {
+          const courseNames = response.courses
+            .map(c => c.course)
+            .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+          setAvailableCourses(courseNames);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar cursos para filtro:", err);
+      }
+    };
+
+    fetchCourses();
+  }, [type, filters.uf, filters.city]);
 
   useEffect(() => {
     fetchUsers();
@@ -114,24 +147,25 @@ export const UsersList: React.FC<UsersListProps> = ({ type, title }) => {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
         {data && data.total > 0 && (
-            <div className="text-sm text-slate-500">
-                Total: <span className="font-bold text-slate-900">{data.total}</span> registros
-            </div>
+          <div className="text-sm text-slate-500">
+            Total: <span className="font-bold text-slate-900">{data.total}</span> registros
+          </div>
         )}
       </div>
 
-      <FiltersBar 
-        filters={filters} 
-        onFilterChange={handleFilterChange} 
-        onReset={handleReset} 
+      <FiltersBar
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onReset={handleReset}
         onExport={handleExport}
+        courses={availableCourses}
       />
 
       {error ? (
         <div className="bg-red-50 border border-red-200 p-6 rounded-xl text-center">
           <AlertCircle className="mx-auto text-red-500 mb-2" size={24} />
           <p className="text-red-800 font-medium">{error}</p>
-          <button 
+          <button
             onClick={() => fetchUsers()}
             className="mt-3 text-sm font-semibold text-red-600 hover:text-red-800 underline"
           >
@@ -140,16 +174,16 @@ export const UsersList: React.FC<UsersListProps> = ({ type, title }) => {
         </div>
       ) : (
         <>
-          <UsersTable 
-            users={data?.users || []} 
-            loading={loading} 
+          <UsersTable
+            users={data?.users || []}
+            loading={loading}
           />
 
           {data && (
-            <Pagination 
-              currentPage={page} 
-              totalPages={data.pages} 
-              onPageChange={setPage} 
+            <Pagination
+              currentPage={page}
+              totalPages={data.pages}
+              onPageChange={setPage}
             />
           )}
         </>
