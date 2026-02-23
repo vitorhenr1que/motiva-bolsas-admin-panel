@@ -44,16 +44,14 @@ export const Dashboard: React.FC = () => {
       setLoadingCourses(true);
       setError(null);
 
-      // 1. Busca resumo geral com filtros de UF, Cidade e Curso
-      const summary = await adminApi.getSummary({ search: '', ...filters });
-      setData(summary);
-      setLoading(false);
-
-      // 2. Busca dados de cursos
-      const [novosRes, renovadosRes] = await Promise.all([
+      // Busca todos os dados em paralelo para melhorar a performance
+      const [summary, novosRes, renovadosRes] = await Promise.all([
+        adminApi.getSummary({ search: '', ...filters }),
         adminApi.getCoursesNovos(filters),
         adminApi.getCoursesRenovados(filters)
       ]);
+
+      setData(summary);
 
       // Ordenação Alfabética por nome do curso
       const sortAlphabetically = (res: CoursesResponse) => ({
@@ -79,6 +77,7 @@ export const Dashboard: React.FC = () => {
       setLoadingCourses(false);
     }
   }, [filters, availableCourses.length]);
+
 
   useEffect(() => {
     fetchData();
